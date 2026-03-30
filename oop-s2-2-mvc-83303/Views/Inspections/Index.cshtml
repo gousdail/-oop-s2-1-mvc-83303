@@ -1,0 +1,56 @@
+@model IEnumerable<oop_s2_2_mvc_83303.Models.Inspection>
+
+@{
+    ViewData["Title"] = "Inspections";
+}
+
+<h1>Inspections</h1>
+
+<p>
+    @if (User.IsInRole("Admin") || User.IsInRole("Inspector"))
+    {
+        <a asp-action="Create" class="btn btn-primary">Create New Inspection</a>
+    }
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Premises</th>
+            <th>Score</th>
+            <th>Outcome</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>@item.InspectionDate.ToShortDateString()</td>
+            <td>@item.Premises?.Name</td>
+            <td>@item.Score</td>
+            <td>
+                @if (item.Outcome == "Fail")
+                {
+                    <span class="badge bg-danger">Fail</span>
+                }
+                else
+                {
+                    <span class="badge bg-success">Pass</span>
+                }
+            </td>
+            <td>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                @if (User.IsInRole("Admin") || User.IsInRole("Inspector"))
+                {
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                }
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                }
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
