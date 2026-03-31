@@ -6,12 +6,10 @@ on:
     branches: [ master, main ]
   pull_request:
 
-# Avoid overlapping Pages deployments
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
-# Required for GitHub Pages deploy
 permissions:
   contents: read
   pages: write
@@ -19,7 +17,6 @@ permissions:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  # Path to your xUnit test project
   TEST_PROJECT: "oop-s2-2-mvc-83303.Tests/oop-s2-2-mvc-83303.Tests.csproj"
 
 jobs:
@@ -40,24 +37,25 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      # The "--" tells dotnet to treat the following path as a file, 
-      # even if it starts with a hyphen.
+      # Added --results-directory to force a predictable path for the coverage file
       - name: Test (xUnit) and collect coverage
         run: >
           dotnet test -- "${{ env.TEST_PROJECT }}"
           -c Release 
           --no-build 
           --collect:"XPlat Code Coverage" 
+          --results-directory ./TestResults
           --logger "trx;LogFileName=test-results.trx"
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
+      # Updated -reports path to look specifically in the TestResults folder
       - name: Generate HTML coverage report
         run: |
           export PATH="$PATH:~/.dotnet/tools"
           reportgenerator \
-            -reports:**/coverage.cobertura.xml \
+            -reports:TestResults/**/coverage.cobertura.xml \
             -targetdir:coveragereport \
             -reporttypes:Html
 
