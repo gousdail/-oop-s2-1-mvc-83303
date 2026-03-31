@@ -40,10 +40,11 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      # Fixed the command by quoting the path and using direct env expansion
+      # The "--" tells dotnet to treat the following path as a file, 
+      # even if it starts with a hyphen.
       - name: Test (xUnit) and collect coverage
         run: >
-          dotnet test "${{ env.TEST_PROJECT }}" 
+          dotnet test -- "${{ env.TEST_PROJECT }}"
           -c Release 
           --no-build 
           --collect:"XPlat Code Coverage" 
@@ -73,7 +74,6 @@ jobs:
           path: ./coveragereport
 
   deploy:
-    # Only deploy on push to main or master
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     needs: build-and-test
     runs-on: ubuntu-latest
