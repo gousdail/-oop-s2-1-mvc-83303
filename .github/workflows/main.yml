@@ -6,10 +6,12 @@ on:
     branches: [ master, main ]
   pull_request:
 
+# Avoid overlapping Pages deployments
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
+# Required for GitHub Pages deploy
 permissions:
   contents: read
   pages: write
@@ -37,42 +39,47 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      # Added --results-directory to force a predictable path for the coverage file
+      - name: Show working directory
+        run: pwd
+
+      - name: List root directory
+        run: ls -la
+
+      # xUnit tests + Coverlet data collector
       - name: Test (xUnit) and collect coverage
         run: >
-          dotnet test -- "${{ env.TEST_PROJECT }}"
-          -c Release 
-          --no-build 
-          --collect:"XPlat Code Coverage" 
-          --results-directory ./TestResults
+          dotnet test "oop-s2-2-mvc-83303.Tests/oop-s2-2-mvc-83303.Tests.csproj" -c Release --no-build
+          --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results.trx"
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
-      # Updated -reports path to look specifically in the TestResults folder
       - name: Generate HTML coverage report
         run: |
           export PATH="$PATH:~/.dotnet/tools"
           reportgenerator \
-            -reports:TestResults/**/coverage.cobertura.xml \
+            -reports:**/coverage.cobertura.xml \
             -targetdir:coveragereport \
             -reporttypes:Html
 
+      # Make the HTML report available as a workflow artifact on PRs too
       - name: Upload coverage as build artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
           path: coveragereport
 
+      # Only package for Pages when merging/pushing to main
       - name: Upload Pages artifact
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./coveragereport
 
   deploy:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    # Only deploy on push to main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build-and-test
     runs-on: ubuntu-latest
     environment:
